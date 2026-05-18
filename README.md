@@ -1,6 +1,8 @@
 # 고양이 토닥토닥 MVP
 
-모바일 타겟의 간단한 정적 SPA입니다. 치즈냥이(`cheese`)와 똘순이(`ddol`)를 고른 뒤 화면 하단의 좌우 터치 영역을 누르면 `image/` 폴더의 `C`, `L`, `R` 사진으로 상태가 전환됩니다.
+모바일 타겟의 간단한 정적 SPA입니다. 치즈냥이(`cheese`)와 똘순이(`ddol`)를 고른 뒤 화면 하단의 좌우 터치 영역을 누르면 `image/` 폴더의 사진으로 상태가 전환됩니다.
+
+똘순이는 터치 시 매우 낮은 확률로 `ddol-a.png` 또는 `ddol-b.png`가 등장하며, 다음 터치 전까지 해당 사진이 유지됩니다.
 
 ## 실행
 
@@ -24,9 +26,10 @@ cat-patpat/
     ddol-C.png
     ddol-L.png
     ddol-R.png
+    ddol-a.png
+    ddol-b.png
   index.html
   styles.css
   app.js
   README.md
 ```
-# cat-patpat

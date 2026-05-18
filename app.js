@@ -4,6 +4,8 @@ const ACTIVE_CLASS_NAME = "is-active";
 const CENTER_IMAGE_KEY = "C";
 const LEFT_IMAGE_KEY = "L";
 const RIGHT_IMAGE_KEY = "R";
+const DDOL_HIDDEN_IMAGE_KEYS = ["a", "b"];
+const DDOL_HIDDEN_IMAGE_PROBABILITY = 0.03;
 const ANIMATION_RESET_DELAY_MS = 430;
 const BURST_REMOVE_DELAY_MS = 760;
 
@@ -88,13 +90,35 @@ function patCat(direction, pointerEvent) {
 
   patCount += 1;
   countElement.textContent = String(patCount);
-  messageElement.textContent = `${catConfig[selectedCatKey].label} ${config.messageSuffix}`;
 
+  if (shouldShowDdolHiddenImage()) {
+    const hiddenImageKey = getRandomDdolHiddenImageKey();
+
+    setCatImage(hiddenImageKey);
+    messageElement.textContent = `${catConfig[selectedCatKey].label} 깜짝 등장`;
+    restartPatAnimation();
+    setActiveButton(config.button);
+    createTapBurst(pointerEvent, "!");
+    clearActiveTouchStateOnly();
+    return;
+  }
+
+  messageElement.textContent = `${catConfig[selectedCatKey].label} ${config.messageSuffix}`;
   setCatImage(config.imageKey);
   restartPatAnimation();
   setActiveButton(config.button);
   createTapBurst(pointerEvent, config.burst);
   scheduleCenterReset();
+}
+
+function shouldShowDdolHiddenImage() {
+  return selectedCatKey === "ddol" && Math.random() < DDOL_HIDDEN_IMAGE_PROBABILITY;
+}
+
+function getRandomDdolHiddenImageKey() {
+  const randomIndex = Math.floor(Math.random() * DDOL_HIDDEN_IMAGE_KEYS.length);
+
+  return DDOL_HIDDEN_IMAGE_KEYS[randomIndex];
 }
 
 function restartPatAnimation() {
@@ -116,6 +140,16 @@ function scheduleCenterReset() {
 
   resetTimerId = window.setTimeout(() => {
     setCatImage(CENTER_IMAGE_KEY);
+    catElement.classList.remove(PATTING_CLASS_NAME);
+    leftZoneElement.classList.remove(ACTIVE_CLASS_NAME);
+    rightZoneElement.classList.remove(ACTIVE_CLASS_NAME);
+  }, ANIMATION_RESET_DELAY_MS);
+}
+
+function clearActiveTouchStateOnly() {
+  window.clearTimeout(resetTimerId);
+
+  resetTimerId = window.setTimeout(() => {
     catElement.classList.remove(PATTING_CLASS_NAME);
     leftZoneElement.classList.remove(ACTIVE_CLASS_NAME);
     rightZoneElement.classList.remove(ACTIVE_CLASS_NAME);
@@ -147,6 +181,11 @@ function preloadCatImages() {
       const image = new Image();
       image.src = getCatImageSource(catKey, imageKey);
     });
+  });
+
+  DDOL_HIDDEN_IMAGE_KEYS.forEach((imageKey) => {
+    const image = new Image();
+    image.src = getCatImageSource("ddol", imageKey);
   });
 }
 
