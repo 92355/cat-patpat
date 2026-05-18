@@ -47,6 +47,11 @@ button {
   display: none;
 }
 
+.motion-notice-center {
+  place-items: center;
+  padding: 14px;
+}
+
 .motion-notice-panel {
   width: min(100%, 320px);
   padding: 14px;

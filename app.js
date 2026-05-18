@@ -43,6 +43,8 @@ const rightZoneElement = document.querySelector("#rightZone");
 const motionToggleElement = document.querySelector("#motionToggle");
 const motionNoticeElement = document.querySelector("#motionNotice");
 const motionNoticeCloseElement = document.querySelector("#motionNoticeClose");
+const pangNoticeElement = document.querySelector("#pangNotice");
+const pangNoticeCloseElement = document.querySelector("#pangNoticeClose");
 const catMenuToggleElement = document.querySelector("#catMenuToggle");
 const catPickerElement = document.querySelector("#catPicker");
 const catOptionElements = document.querySelectorAll(".cat-option");
@@ -383,7 +385,7 @@ function setMotionEnabled(isEnabled) {
   window.clearTimeout(motionImpactTimerId);
   motionImpactTimerId = 0;
   motionToggleElement.classList.toggle(MOTION_BUTTON_ENABLED_CLASS_NAME, isEnabled);
-  motionToggleElement.textContent = isEnabled ? "흔들기 켜짐" : "흔들기 켜기";
+  motionToggleElement.textContent = isEnabled ? "팡팡 켜짐" : "팡팡해주기";
   motionToggleElement.setAttribute("aria-pressed", String(isEnabled));
 }
 
@@ -408,6 +410,14 @@ function showMotionNoticeIfNeeded() {
   }
 
   motionNoticeElement.hidden = false;
+}
+
+function showPangNotice() {
+  pangNoticeElement.hidden = false;
+}
+
+function closePangNotice() {
+  pangNoticeElement.hidden = true;
 }
 
 async function requestMotionPermission() {
@@ -437,7 +447,8 @@ async function toggleMotionControl() {
     }
 
     setMotionEnabled(true);
-    messageElement.textContent = "좌우로 톡 치면 토닥여요";
+    showPangNotice();
+    messageElement.textContent = "옆 테두리를 톡톡 두드려요";
   } catch (error) {
     console.error("Device motion permission failed:", error);
     messageElement.textContent = "이 브라우저는 흔들기를 지원하지 않아요";
@@ -491,6 +502,16 @@ bindTouchZone(rightZoneElement, "right");
 
 motionNoticeCloseElement.addEventListener("click", () => {
   motionNoticeElement.hidden = true;
+});
+
+pangNoticeCloseElement.addEventListener("click", closePangNotice);
+
+pangNoticeElement.addEventListener("pointerdown", (event) => {
+  if (event.target !== pangNoticeElement) {
+    return;
+  }
+
+  closePangNotice();
 });
 
 if (canUseDeviceMotion()) {
