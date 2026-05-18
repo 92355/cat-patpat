@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>고양이 토닥토닥</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell" aria-label="고양이 토닥토닥 서비스">
+      <section class="stage" aria-live="polite">
+        <div class="status">
+          <p class="eyebrow">CAT PAT PAT</p>
+          <h1>고양이 토닥토닥</h1>
+          <p id="message" class="message">고양이를 고르고 아래를 터치해보세요.</p>
+        </div>
+
+        <div class="cat-picker" aria-label="고양이 선택">
+          <button class="cat-option is-selected" type="button" data-cat="cheese" aria-pressed="true">
+            치즈냥이
+          </button>
+          <button class="cat-option" type="button" data-cat="ddol" aria-pressed="false">
+            똘순이
+          </button>
+        </div>
+
+        <div id="cat" class="cat" data-direction="center">
+          <img id="catImage" class="cat-image" src="./image/cheese-C.png" alt="치즈냥이" draggable="false" />
+        </div>
+
+        <div class="counter" aria-label="토닥 횟수">
+          <span id="count">0</span>
+          <span>토닥</span>
+        </div>
+      </section>
+
+      <nav class="touch-zones" aria-label="토닥 방향 선택">
+        <button id="leftZone" class="touch-zone touch-zone-left" type="button" aria-label="왼쪽 엉덩이 토닥">
+          <span>왼쪽</span>
+        </button>
+        <button id="rightZone" class="touch-zone touch-zone-right" type="button" aria-label="오른쪽 엉덩이 토닥">
+          <span>오른쪽</span>
+        </button>
+      </nav>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
