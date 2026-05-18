@@ -14,6 +14,25 @@ const MOTION_MIN_INTERVAL_MS = 620;
 const MOTION_SETTLE_DELAY_MS = 90;
 const MOTION_BUTTON_ENABLED_CLASS_NAME = "is-enabled";
 const MOTION_BUTTON_HIDDEN_CLASS_NAME = "is-hidden";
+const BONUS_TOUCH_COUNT = 10000;
+const BONUS_TOUCH_SEQUENCE = [
+  "right",
+  "right",
+  "right",
+  "right",
+  "right",
+  "left",
+  "left",
+  "left",
+  "left",
+  "left",
+  "right",
+  "right",
+  "right",
+  "left",
+  "left",
+  "left",
+];
 
 const catElement = document.querySelector("#cat");
 const catImageElement = document.querySelector("#catImage");
@@ -62,6 +81,7 @@ let previousMotionVector = null;
 let motionImpactTimerId = 0;
 let pendingMotionImpact = null;
 let lastMotionPatTime = 0;
+let recentTouchDirections = [];
 
 function getCatImageSource(catKey, imageKey) {
   const cat = catConfig[catKey];
@@ -146,6 +166,36 @@ function patCat(direction, pointerEvent) {
   setActiveButton(config.button);
   createTapBurst(pointerEvent, config.burst);
   scheduleCenterReset();
+}
+
+function isBonusTouchSequenceMatched() {
+  if (recentTouchDirections.length !== BONUS_TOUCH_SEQUENCE.length) {
+    return false;
+  }
+
+  return BONUS_TOUCH_SEQUENCE.every((direction, index) => direction === recentTouchDirections[index]);
+}
+
+function addBonusTouchCount() {
+  patCount += BONUS_TOUCH_COUNT;
+  countElement.textContent = String(patCount);
+  messageElement.textContent = `비밀 토닥 +${BONUS_TOUCH_COUNT}`;
+}
+
+function trackTouchSequence(direction) {
+  recentTouchDirections.push(direction);
+
+  if (recentTouchDirections.length > BONUS_TOUCH_SEQUENCE.length) {
+    recentTouchDirections = recentTouchDirections.slice(-BONUS_TOUCH_SEQUENCE.length);
+  }
+
+  if (!isBonusTouchSequenceMatched()) {
+    return;
+  }
+
+  // Reset after reward so holding the pattern does not repeat immediately. / 보상 후 즉시 반복 발동하지 않도록 초기화.
+  recentTouchDirections = [];
+  addBonusTouchCount();
 }
 
 function shouldShowDdolHiddenImage() {
@@ -412,6 +462,7 @@ function bindTouchZone(zoneElement, direction) {
   zoneElement.addEventListener("pointerdown", (event) => {
     event.preventDefault();
     patCat(direction, event);
+    trackTouchSequence(direction);
   });
 }
 
