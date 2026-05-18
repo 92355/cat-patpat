@@ -19,10 +19,10 @@ const MOTION_BUTTON_ENABLED_CLASS_NAME = "is-enabled";
 const MOTION_BUTTON_HIDDEN_CLASS_NAME = "is-hidden";
 const HIT_INTERVAL_COUNT = 100;
 const HIT_EFFECT_REMOVE_DELAY_MS = 900;
-const COFFEE_TRAP_COUNT = 4999;
+const COFFEE_TRAP_COUNT = 999;
 const COFFEE_TRAP_DURATION_MS = 20000;
 const KAKAOPAY_LINK_URL = "https://qr.kakaopay.com/FaaVS0JeGf988363";
-const GIFT_UNLOCK_COUNT = 10000;
+const GIFT_UNLOCK_COUNT = 5000;
 const GIFT_EFFECT_REMOVE_DELAY_MS = 4200;
 const FANFARE_DROP_COUNT = 34;
 const FANFARE_EMOJIS = ["🎉", "🎊", "✨", "💝"];
@@ -33,7 +33,7 @@ const CAT_CLICK_MESSAGES = {
   600: "진짜 어디까지 가려고 그래요?",
   1000: "이 페이지를 개발자에게 스크린샷 찍어서 전송하세요. 뭐라도 드릴게요. 수고하셨어요",
 };
-const BONUS_TOUCH_COUNT = 10000;
+const BONUS_TOUCH_COUNT = 5000;
 const BONUS_TOUCH_SEQUENCE = [
   "right",
   "right",
@@ -290,14 +290,6 @@ function createCatClickPopup(message) {
   closeButtonElement.textContent = "확인";
 
   closeButtonElement.addEventListener("click", () => {
-    popupElement.remove();
-  });
-
-  popupElement.addEventListener("pointerdown", (event) => {
-    if (event.target !== popupElement) {
-      return;
-    }
-
     popupElement.remove();
   });
 
