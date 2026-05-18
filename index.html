@@ -8,10 +8,6 @@
   </head>
   <body>
     <main class="app-shell" aria-label="피곤하세요? 궁디팡팡해보세요">
-      <button id="chromeOpen" class="browser-open" type="button">
-        Chrome
-      </button>
-
       <section class="stage" aria-live="polite">
         <div class="status">
           <p class="eyebrow">CAT PAT PAT</p>
@@ -51,6 +47,14 @@
         </button>
       </nav>
     </main>
+
+    <div id="motionNotice" class="motion-notice" role="dialog" aria-modal="true" aria-labelledby="motionNoticeTitle" hidden>
+      <div class="motion-notice-panel">
+        <p id="motionNoticeTitle" class="motion-notice-title">흔들기 기능 안내</p>
+        <p class="motion-notice-text">흔들기 기능을 사용하시려면 크롬 브라우저를 통해 실행해주세요.</p>
+        <button id="motionNoticeClose" class="motion-notice-close" type="button">확인</button>
+      </div>
+    </div>
 
     <script src="./app.js"></script>
   </body>

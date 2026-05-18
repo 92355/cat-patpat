@@ -6,15 +6,14 @@ const LEFT_IMAGE_KEY = "L";
 const RIGHT_IMAGE_KEY = "R";
 const DDOL_HIDDEN_IMAGE_KEYS = ["a", "b"];
 const DDOL_HIDDEN_IMAGE_PROBABILITY = 0.03;
-const ANIMATION_RESET_DELAY_MS = 430;
-const BURST_REMOVE_DELAY_MS = 760;
-const MOTION_IMPACT_THRESHOLD = 6;
-const MOTION_DOMINANCE_RATIO = 1.25;
+const ANIMATION_RESET_DELAY_MS = 530;
+const BURST_REMOVE_DELAY_MS = 450;
+const MOTION_IMPACT_THRESHOLD = 4;
+const MOTION_DOMINANCE_RATIO = 1.15;
 const MOTION_MIN_INTERVAL_MS = 620;
 const MOTION_SETTLE_DELAY_MS = 90;
 const MOTION_BUTTON_ENABLED_CLASS_NAME = "is-enabled";
 const MOTION_BUTTON_HIDDEN_CLASS_NAME = "is-hidden";
-const BROWSER_BUTTON_HIDDEN_CLASS_NAME = "is-hidden";
 
 const catElement = document.querySelector("#cat");
 const catImageElement = document.querySelector("#catImage");
@@ -23,7 +22,8 @@ const countElement = document.querySelector("#count");
 const leftZoneElement = document.querySelector("#leftZone");
 const rightZoneElement = document.querySelector("#rightZone");
 const motionToggleElement = document.querySelector("#motionToggle");
-const chromeOpenElement = document.querySelector("#chromeOpen");
+const motionNoticeElement = document.querySelector("#motionNotice");
+const motionNoticeCloseElement = document.querySelector("#motionNoticeClose");
 const catOptionElements = document.querySelectorAll(".cat-option");
 
 const catConfig = {
@@ -40,13 +40,13 @@ const catConfig = {
 const directionConfig = {
   left: {
     imageKey: LEFT_IMAGE_KEY,
-    messageSuffix: "왼쪽으로 살랑",
+    messageSuffix: "냥냥냥",
     burst: "pat",
     button: leftZoneElement,
   },
   right: {
     imageKey: RIGHT_IMAGE_KEY,
-    messageSuffix: "오른쪽으로 살랑",
+    messageSuffix: "뇽뇽뇽",
     burst: "pat",
     button: rightZoneElement,
   },
@@ -318,14 +318,6 @@ function canUseDeviceMotion() {
   return "DeviceMotionEvent" in window;
 }
 
-function isAndroid() {
-  return /Android/i.test(navigator.userAgent);
-}
-
-function isIos() {
-  return /iPad|iPhone|iPod/i.test(navigator.userAgent);
-}
-
 function isChromeLikeBrowser() {
   const userAgent = navigator.userAgent;
   const userAgentBrands = navigator.userAgentData?.brands ?? [];
@@ -337,41 +329,12 @@ function isChromeLikeBrowser() {
   return (hasChromeBrand || hasChromeUserAgent) && !isOtherChromiumBrowser && !isAndroidWebView;
 }
 
-function getAndroidChromeUrl(pageUrl) {
-  const parsedUrl = new URL(pageUrl);
-  const path = `${parsedUrl.host}${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
-  const scheme = parsedUrl.protocol.replace(":", "");
-  const fallbackUrl = encodeURIComponent(pageUrl);
-
-  return `intent://${path}#Intent;scheme=${scheme};package=com.android.chrome;S.browser_fallback_url=${fallbackUrl};end`;
-}
-
-function getIosChromeUrl(pageUrl) {
-  const parsedUrl = new URL(pageUrl);
-  const chromeScheme = parsedUrl.protocol === "https:" ? "googlechromes" : "googlechrome";
-
-  return `${chromeScheme}://${parsedUrl.host}${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
-}
-
-function openPageInChrome() {
-  const pageUrl = window.location.href;
-
-  if (!/^https?:\/\//i.test(pageUrl)) {
-    messageElement.textContent = "배포된 https 주소에서 Chrome 열기를 쓸 수 있어요";
+function showMotionNoticeIfNeeded() {
+  if (isChromeLikeBrowser()) {
     return;
   }
 
-  if (isAndroid()) {
-    window.location.href = getAndroidChromeUrl(pageUrl);
-    return;
-  }
-
-  if (isIos()) {
-    window.location.href = getIosChromeUrl(pageUrl);
-    return;
-  }
-
-  messageElement.textContent = "휴대폰에서 Chrome 열기를 사용할 수 있어요";
+  motionNoticeElement.hidden = false;
 }
 
 async function requestMotionPermission() {
@@ -438,11 +401,9 @@ catOptionElements.forEach((optionElement) => {
 bindTouchZone(leftZoneElement, "left");
 bindTouchZone(rightZoneElement, "right");
 
-if (isChromeLikeBrowser()) {
-  chromeOpenElement.classList.add(BROWSER_BUTTON_HIDDEN_CLASS_NAME);
-} else {
-  chromeOpenElement.addEventListener("click", openPageInChrome);
-}
+motionNoticeCloseElement.addEventListener("click", () => {
+  motionNoticeElement.hidden = true;
+});
 
 if (canUseDeviceMotion()) {
   motionToggleElement.addEventListener("click", () => {
@@ -454,4 +415,5 @@ if (canUseDeviceMotion()) {
   motionToggleElement.classList.add(MOTION_BUTTON_HIDDEN_CLASS_NAME);
 }
 
+showMotionNoticeIfNeeded();
 preloadCatImages();
