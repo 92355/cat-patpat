@@ -8,6 +8,10 @@ const DDOL_HIDDEN_IMAGE_KEYS = ["a", "b"];
 const DDOL_HIDDEN_IMAGE_PROBABILITY = 0.03;
 const ANIMATION_RESET_DELAY_MS = 430;
 const BURST_REMOVE_DELAY_MS = 760;
+const MOTION_IMPACT_THRESHOLD = 8;
+const MOTION_MIN_INTERVAL_MS = 520;
+const MOTION_BUTTON_ENABLED_CLASS_NAME = "is-enabled";
+const MOTION_BUTTON_HIDDEN_CLASS_NAME = "is-hidden";
 
 const catElement = document.querySelector("#cat");
 const catImageElement = document.querySelector("#catImage");
@@ -15,6 +19,7 @@ const messageElement = document.querySelector("#message");
 const countElement = document.querySelector("#count");
 const leftZoneElement = document.querySelector("#leftZone");
 const rightZoneElement = document.querySelector("#rightZone");
+const motionToggleElement = document.querySelector("#motionToggle");
 const catOptionElements = document.querySelectorAll(".cat-option");
 
 const catConfig = {
@@ -46,6 +51,9 @@ const directionConfig = {
 let selectedCatKey = "cheese";
 let patCount = 0;
 let resetTimerId = 0;
+let isMotionEnabled = false;
+let previousMotionX = null;
+let lastMotionPatTime = 0;
 
 function getCatImageSource(catKey, imageKey) {
   const cat = catConfig[catKey];
@@ -175,6 +183,108 @@ function createTapBurst(pointerEvent, text) {
   }, BURST_REMOVE_DELAY_MS);
 }
 
+function getMotionX(deviceMotionEvent) {
+  const acceleration = deviceMotionEvent.accelerationIncludingGravity ?? deviceMotionEvent.acceleration;
+
+  if (typeof acceleration?.x !== "number") {
+    return null;
+  }
+
+  return acceleration.x;
+}
+
+function getMotionPatEvent(direction) {
+  const clientX = direction === "left" ? window.innerWidth * 0.25 : window.innerWidth * 0.75;
+
+  return {
+    clientX,
+    clientY: window.innerHeight - 132,
+  };
+}
+
+function handleDeviceMotion(deviceMotionEvent) {
+  if (!isMotionEnabled) {
+    return;
+  }
+
+  const motionX = getMotionX(deviceMotionEvent);
+
+  if (motionX === null) {
+    return;
+  }
+
+  if (previousMotionX === null) {
+    previousMotionX = motionX;
+    return;
+  }
+
+  const impactX = motionX - previousMotionX;
+  const now = Date.now();
+
+  previousMotionX = motionX;
+
+  if (Math.abs(impactX) < MOTION_IMPACT_THRESHOLD) {
+    return;
+  }
+
+  if (now - lastMotionPatTime < MOTION_MIN_INTERVAL_MS) {
+    return;
+  }
+
+  lastMotionPatTime = now;
+
+  // Map lateral impact to the existing pat flow. / 좌우 충격을 기존 토닥 흐름으로 연결.
+  const direction = impactX < 0 ? "left" : "right";
+
+  patCat(direction, getMotionPatEvent(direction));
+}
+
+function setMotionEnabled(isEnabled) {
+  isMotionEnabled = isEnabled;
+  previousMotionX = null;
+  motionToggleElement.classList.toggle(MOTION_BUTTON_ENABLED_CLASS_NAME, isEnabled);
+  motionToggleElement.textContent = isEnabled ? "흔들기 켜짐" : "흔들기 켜기";
+  motionToggleElement.setAttribute("aria-pressed", String(isEnabled));
+}
+
+function canUseDeviceMotion() {
+  return "DeviceMotionEvent" in window;
+}
+
+async function requestMotionPermission() {
+  const deviceMotionEvent = window.DeviceMotionEvent;
+
+  if (typeof deviceMotionEvent.requestPermission !== "function") {
+    return true;
+  }
+
+  const permissionState = await deviceMotionEvent.requestPermission();
+
+  return permissionState === "granted";
+}
+
+async function toggleMotionControl() {
+  if (isMotionEnabled) {
+    setMotionEnabled(false);
+    return;
+  }
+
+  try {
+    const isPermissionGranted = await requestMotionPermission();
+
+    if (!isPermissionGranted) {
+      messageElement.textContent = "흔들기 권한이 필요해요";
+      return;
+    }
+
+    setMotionEnabled(true);
+    messageElement.textContent = "좌우로 톡 치면 토닥여요";
+  } catch (error) {
+    console.error("Device motion permission failed:", error);
+    messageElement.textContent = "이 브라우저는 흔들기를 지원하지 않아요";
+  }
+}
+
 function preloadCatImages() {
   Object.keys(catConfig).forEach((catKey) => {
     [CENTER_IMAGE_KEY, LEFT_IMAGE_KEY, RIGHT_IMAGE_KEY].forEach((imageKey) => {
@@ -204,4 +314,15 @@ catOptionElements.forEach((optionElement) => {
 
 bindTouchZone(leftZoneElement, "left");
 bindTouchZone(rightZoneElement, "right");
+
+if (canUseDeviceMotion()) {
+  motionToggleElement.addEventListener("click", () => {
+    toggleMotionControl();
+  });
+
+  window.addEventListener("devicemotion", handleDeviceMotion);
+} else {
+  motionToggleElement.classList.add(MOTION_BUTTON_HIDDEN_CLASS_NAME);
+}
+
 preloadCatImages();
