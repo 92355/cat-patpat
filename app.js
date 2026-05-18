@@ -8,10 +8,13 @@ const DDOL_HIDDEN_IMAGE_KEYS = ["a", "b"];
 const DDOL_HIDDEN_IMAGE_PROBABILITY = 0.03;
 const ANIMATION_RESET_DELAY_MS = 430;
 const BURST_REMOVE_DELAY_MS = 760;
-const MOTION_IMPACT_THRESHOLD = 8;
-const MOTION_MIN_INTERVAL_MS = 520;
+const MOTION_IMPACT_THRESHOLD = 6;
+const MOTION_DOMINANCE_RATIO = 1.25;
+const MOTION_MIN_INTERVAL_MS = 620;
+const MOTION_SETTLE_DELAY_MS = 90;
 const MOTION_BUTTON_ENABLED_CLASS_NAME = "is-enabled";
 const MOTION_BUTTON_HIDDEN_CLASS_NAME = "is-hidden";
+const BROWSER_BUTTON_HIDDEN_CLASS_NAME = "is-hidden";
 
 const catElement = document.querySelector("#cat");
 const catImageElement = document.querySelector("#catImage");
@@ -20,6 +23,7 @@ const countElement = document.querySelector("#count");
 const leftZoneElement = document.querySelector("#leftZone");
 const rightZoneElement = document.querySelector("#rightZone");
 const motionToggleElement = document.querySelector("#motionToggle");
+const chromeOpenElement = document.querySelector("#chromeOpen");
 const catOptionElements = document.querySelectorAll(".cat-option");
 
 const catConfig = {
@@ -52,7 +56,9 @@ let selectedCatKey = "cheese";
 let patCount = 0;
 let resetTimerId = 0;
 let isMotionEnabled = false;
-let previousMotionX = null;
+let previousMotionVector = null;
+let motionImpactTimerId = 0;
+let pendingMotionImpact = null;
 let lastMotionPatTime = 0;
 
 function getCatImageSource(catKey, imageKey) {
@@ -183,14 +189,22 @@ function createTapBurst(pointerEvent, text) {
   }, BURST_REMOVE_DELAY_MS);
 }
 
-function getMotionX(deviceMotionEvent) {
-  const acceleration = deviceMotionEvent.accelerationIncludingGravity ?? deviceMotionEvent.acceleration;
+function getMotionVector(deviceMotionEvent) {
+  const acceleration = deviceMotionEvent.acceleration;
+  const fallbackAcceleration = deviceMotionEvent.accelerationIncludingGravity;
+  const hasGravityAdjustedX = typeof acceleration?.x === "number";
+  const vector = hasGravityAdjustedX ? acceleration : fallbackAcceleration;
 
-  if (typeof acceleration?.x !== "number") {
+  if (typeof vector?.x !== "number") {
     return null;
   }
 
-  return acceleration.x;
+  return {
+    x: vector.x,
+    y: typeof vector.y === "number" ? vector.y : 0,
+    z: typeof vector.z === "number" ? vector.z : 0,
+    isGravityAdjusted: hasGravityAdjustedX,
+  };
 }
 
 function getMotionPatEvent(direction) {
@@ -202,28 +216,79 @@ function getMotionPatEvent(direction) {
   };
 }
 
+function getMotionImpact(currentMotionVector) {
+  if (currentMotionVector.isGravityAdjusted) {
+    return currentMotionVector;
+  }
+
+  if (previousMotionVector === null) {
+    return null;
+  }
+
+  return {
+    x: currentMotionVector.x - previousMotionVector.x,
+    y: currentMotionVector.y - previousMotionVector.y,
+    z: currentMotionVector.z - previousMotionVector.z,
+  };
+}
+
+function isLateralImpact(motionImpact) {
+  const lateralStrength = Math.abs(motionImpact.x);
+  const verticalStrength = Math.max(Math.abs(motionImpact.y), Math.abs(motionImpact.z));
+
+  return lateralStrength >= MOTION_IMPACT_THRESHOLD && lateralStrength > verticalStrength * MOTION_DOMINANCE_RATIO;
+}
+
+function commitPendingMotionImpact() {
+  const motionImpact = pendingMotionImpact;
+
+  motionImpactTimerId = 0;
+  pendingMotionImpact = null;
+
+  if (motionImpact === null) {
+    return;
+  }
+
+  lastMotionPatTime = Date.now();
+  patCat(motionImpact.direction, getMotionPatEvent(motionImpact.direction));
+}
+
+function queueMotionImpact(motionImpact) {
+  const direction = motionImpact.x < 0 ? "left" : "right";
+  const strength = Math.abs(motionImpact.x);
+
+  if (pendingMotionImpact === null || strength > pendingMotionImpact.strength) {
+    pendingMotionImpact = {
+      direction,
+      strength,
+    };
+  }
+
+  if (motionImpactTimerId !== 0) {
+    return;
+  }
+
+  // Wait briefly and use the strongest side impact. / 짧게 기다린 뒤 가장 큰 좌우 충격만 사용.
+  motionImpactTimerId = window.setTimeout(commitPendingMotionImpact, MOTION_SETTLE_DELAY_MS);
+}
+
 function handleDeviceMotion(deviceMotionEvent) {
   if (!isMotionEnabled) {
     return;
   }
 
-  const motionX = getMotionX(deviceMotionEvent);
+  const currentMotionVector = getMotionVector(deviceMotionEvent);
 
-  if (motionX === null) {
+  if (currentMotionVector === null) {
     return;
   }
 
-  if (previousMotionX === null) {
-    previousMotionX = motionX;
-    return;
-  }
-
-  const impactX = motionX - previousMotionX;
+  const motionImpact = getMotionImpact(currentMotionVector);
   const now = Date.now();
 
-  previousMotionX = motionX;
+  previousMotionVector = currentMotionVector;
 
-  if (Math.abs(impactX) < MOTION_IMPACT_THRESHOLD) {
+  if (motionImpact === null) {
     return;
   }
 
@@ -231,17 +296,19 @@ function handleDeviceMotion(deviceMotionEvent) {
     return;
   }
 
-  lastMotionPatTime = now;
+  if (!isLateralImpact(motionImpact)) {
+    return;
+  }
 
-  // Map lateral impact to the existing pat flow. / 좌우 충격을 기존 토닥 흐름으로 연결.
-  const direction = impactX < 0 ? "left" : "right";
-
-  patCat(direction, getMotionPatEvent(direction));
+  queueMotionImpact(motionImpact);
 }
 
 function setMotionEnabled(isEnabled) {
   isMotionEnabled = isEnabled;
-  previousMotionX = null;
+  previousMotionVector = null;
+  pendingMotionImpact = null;
+  window.clearTimeout(motionImpactTimerId);
+  motionImpactTimerId = 0;
   motionToggleElement.classList.toggle(MOTION_BUTTON_ENABLED_CLASS_NAME, isEnabled);
   motionToggleElement.textContent = isEnabled ? "흔들기 켜짐" : "흔들기 켜기";
   motionToggleElement.setAttribute("aria-pressed", String(isEnabled));
@@ -249,6 +316,62 @@ function setMotionEnabled(isEnabled) {
 
 function canUseDeviceMotion() {
   return "DeviceMotionEvent" in window;
+}
+
+function isAndroid() {
+  return /Android/i.test(navigator.userAgent);
+}
+
+function isIos() {
+  return /iPad|iPhone|iPod/i.test(navigator.userAgent);
+}
+
+function isChromeLikeBrowser() {
+  const userAgent = navigator.userAgent;
+  const userAgentBrands = navigator.userAgentData?.brands ?? [];
+  const hasChromeBrand = userAgentBrands.some((brandInfo) => brandInfo.brand === "Google Chrome");
+  const hasChromeUserAgent = /Chrome|CriOS/i.test(userAgent);
+  const isOtherChromiumBrowser = /Edg|OPR|SamsungBrowser|Whale|Firefox|FxiOS/i.test(userAgent);
+  const isAndroidWebView = /; wv\)/i.test(userAgent);
+
+  return (hasChromeBrand || hasChromeUserAgent) && !isOtherChromiumBrowser && !isAndroidWebView;
+}
+
+function getAndroidChromeUrl(pageUrl) {
+  const parsedUrl = new URL(pageUrl);
+  const path = `${parsedUrl.host}${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
+  const scheme = parsedUrl.protocol.replace(":", "");
+  const fallbackUrl = encodeURIComponent(pageUrl);
+
+  return `intent://${path}#Intent;scheme=${scheme};package=com.android.chrome;S.browser_fallback_url=${fallbackUrl};end`;
+}
+
+function getIosChromeUrl(pageUrl) {
+  const parsedUrl = new URL(pageUrl);
+  const chromeScheme = parsedUrl.protocol === "https:" ? "googlechromes" : "googlechrome";
+
+  return `${chromeScheme}://${parsedUrl.host}${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
+}
+
+function openPageInChrome() {
+  const pageUrl = window.location.href;
+
+  if (!/^https?:\/\//i.test(pageUrl)) {
+    messageElement.textContent = "배포된 https 주소에서 Chrome 열기를 쓸 수 있어요";
+    return;
+  }
+
+  if (isAndroid()) {
+    window.location.href = getAndroidChromeUrl(pageUrl);
+    return;
+  }
+
+  if (isIos()) {
+    window.location.href = getIosChromeUrl(pageUrl);
+    return;
+  }
+
+  messageElement.textContent = "휴대폰에서 Chrome 열기를 사용할 수 있어요";
 }
 
 async function requestMotionPermission() {
@@ -314,6 +437,12 @@ catOptionElements.forEach((optionElement) => {
 
 bindTouchZone(leftZoneElement, "left");
 bindTouchZone(rightZoneElement, "right");
+
+if (isChromeLikeBrowser()) {
+  chromeOpenElement.classList.add(BROWSER_BUTTON_HIDDEN_CLASS_NAME);
+} else {
+  chromeOpenElement.addEventListener("click", openPageInChrome);
+}
 
 if (canUseDeviceMotion()) {
   motionToggleElement.addEventListener("click", () => {
