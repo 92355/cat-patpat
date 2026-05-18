@@ -255,6 +255,7 @@ h1 {
   height: 100%;
   object-fit: contain;
   object-position: center bottom;
+  cursor: pointer;
   user-select: none;
   -webkit-user-drag: none;
   filter: drop-shadow(0 12px 14px rgba(106, 65, 44, 0.16));
@@ -345,6 +346,155 @@ h1 {
   animation: burst-float 760ms ease-out forwards;
 }
 
+.hit-effect {
+  position: fixed;
+  top: 42%;
+  left: 50%;
+  z-index: 6;
+  padding: 10px 18px;
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  border-radius: 999px;
+  background: #2f2522;
+  box-shadow: 0 16px 34px rgba(83, 54, 42, 0.22);
+  color: #fff;
+  font-size: clamp(1.4rem, 8vw, 2.7rem);
+  font-weight: 1000;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.78);
+  animation: hit-pop 900ms ease-out forwards;
+}
+
+.gift-effect {
+  position: fixed;
+  inset: 0;
+  z-index: 7;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.fanfare-rain {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.fanfare-drop {
+  position: absolute;
+  top: -12vh;
+  left: var(--drop-x);
+  font-size: clamp(1.4rem, 7vw, 2.6rem);
+  animation: fanfare-fall var(--drop-duration) linear var(--drop-delay) forwards;
+  filter: drop-shadow(0 6px 8px rgba(47, 37, 34, 0.18));
+}
+
+.gift-image {
+  width: min(58vw, 250px);
+  max-height: 34dvh;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 28px rgba(83, 54, 42, 0.24));
+  animation: gift-pop 4200ms ease-out forwards;
+}
+
+.coffee-trap {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(47, 37, 34, 0.28);
+  pointer-events: auto;
+}
+
+.coffee-trap-panel {
+  width: min(100%, 340px);
+  padding: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.86);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 22px 46px rgba(47, 37, 34, 0.24);
+  text-align: center;
+  animation: coffee-trap-pop 260ms ease-out;
+}
+
+.coffee-trap-title {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-size: 1.18rem;
+  font-weight: 1000;
+}
+
+.coffee-trap-text {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.coffee-trap-link {
+  display: inline-grid;
+  place-items: center;
+  min-height: 38px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: #ffe812;
+  color: #2f2522;
+  font-size: 0.9rem;
+  font-weight: 1000;
+  text-decoration: none;
+}
+
+.coffee-trap-timer {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.cat-click-popup {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(47, 37, 34, 0.18);
+}
+
+.cat-click-popup-panel {
+  width: min(100%, 320px);
+  padding: 16px;
+  border: 1px solid rgba(47, 37, 34, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 20px 40px rgba(47, 37, 34, 0.2);
+  text-align: center;
+  animation: coffee-trap-pop 220ms ease-out;
+}
+
+.cat-click-popup-text {
+  margin: 0 0 14px;
+  color: var(--ink);
+  font-size: 0.96rem;
+  font-weight: 900;
+  line-height: 1.48;
+}
+
+.cat-click-popup-close {
+  min-width: 96px;
+  min-height: 36px;
+  border: 0;
+  border-radius: 999px;
+  background: #2f2522;
+  color: #fff;
+  font-size: 0.86rem;
+  font-weight: 900;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
 @keyframes cat-hop {
   0%,
   100% {
@@ -366,6 +516,69 @@ h1 {
   100% {
     opacity: 0;
     transform: translate(-50%, -76px) scale(1.18);
+  }
+}
+
+@keyframes hit-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.68) rotate(-4deg);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.08) rotate(2deg);
+  }
+  58% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) rotate(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -70%) scale(0.92) rotate(0);
+  }
+}
+
+@keyframes fanfare-fall {
+  0% {
+    opacity: 0;
+    transform: translate3d(-50%, 0, 0) rotate(0deg);
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-50%, 118vh, 0) rotate(320deg);
+  }
+}
+
+@keyframes gift-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.72) translateY(18px);
+  }
+  12% {
+    opacity: 1;
+    transform: scale(1.08) translateY(0);
+  }
+  72% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.92) translateY(-18px);
+  }
+}
+
+@keyframes coffee-trap-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.92) translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
   }
 }
 

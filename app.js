@@ -4,8 +4,9 @@ const ACTIVE_CLASS_NAME = "is-active";
 const CENTER_IMAGE_KEY = "C";
 const LEFT_IMAGE_KEY = "L";
 const RIGHT_IMAGE_KEY = "R";
-const THREE_COLOR_CAT_KEY = "threeColor";
-const THREE_COLOR_ALT_IMAGE_PROBABILITY = 0.3;
+const MACKEREL_CAT_KEY = "mackerel";
+const MACKEREL_RIGHT_EXTRA_IMAGE_KEY = "E";
+const MACKEREL_RIGHT_EXTRA_IMAGE_PROBABILITY = 0.05;
 const DDOL_HIDDEN_IMAGE_KEYS = ["a", "b"];
 const DDOL_HIDDEN_IMAGE_PROBABILITY = 0.03;
 const ANIMATION_RESET_DELAY_MS = 530;
@@ -16,6 +17,22 @@ const MOTION_MIN_INTERVAL_MS = 620;
 const MOTION_SETTLE_DELAY_MS = 90;
 const MOTION_BUTTON_ENABLED_CLASS_NAME = "is-enabled";
 const MOTION_BUTTON_HIDDEN_CLASS_NAME = "is-hidden";
+const HIT_INTERVAL_COUNT = 100;
+const HIT_EFFECT_REMOVE_DELAY_MS = 900;
+const COFFEE_TRAP_COUNT = 4999;
+const COFFEE_TRAP_DURATION_MS = 20000;
+const KAKAOPAY_LINK_URL = "https://qr.kakaopay.com/FaaVS0JeGf988363";
+const GIFT_UNLOCK_COUNT = 10000;
+const GIFT_EFFECT_REMOVE_DELAY_MS = 4200;
+const FANFARE_DROP_COUNT = 34;
+const FANFARE_EMOJIS = ["🎉", "🎊", "✨", "💝"];
+const CAT_CLICK_MESSAGES = {
+  100: "이걸 왜 클릭하고있어요?",
+  200: "진짜 계속 누른거에요?",
+  300: "대단하네 근데 이제 없어요.",
+  600: "진짜 어디까지 가려고 그래요?",
+  1000: "이 페이지를 개발자에게 스크린샷 찍어서 전송하세요. 뭐라도 드릴게요. 수고하셨어요",
+};
 const BONUS_TOUCH_COUNT = 10000;
 const BONUS_TOUCH_SEQUENCE = [
   "right",
@@ -94,6 +111,9 @@ let motionImpactTimerId = 0;
 let pendingMotionImpact = null;
 let lastMotionPatTime = 0;
 let recentTouchDirections = [];
+let hasShownGiftEffect = false;
+let hasShownCoffeeTrap = false;
+let catImageClickCount = 0;
 
 function getCatImageSource(catKey, imageKey) {
   const cat = catConfig[catKey];
@@ -114,16 +134,16 @@ function setCatImage(imageKey) {
 }
 
 function getPatImageKey(imageKey) {
-  const canUseThreeColorAltImage =
-    selectedCatKey === THREE_COLOR_CAT_KEY &&
-    (imageKey === LEFT_IMAGE_KEY || imageKey === RIGHT_IMAGE_KEY) &&
-    Math.random() < THREE_COLOR_ALT_IMAGE_PROBABILITY;
+  const canUseMackerelExtraImage =
+    selectedCatKey === MACKEREL_CAT_KEY &&
+    imageKey === RIGHT_IMAGE_KEY &&
+    Math.random() < MACKEREL_RIGHT_EXTRA_IMAGE_PROBABILITY;
 
-  if (!canUseThreeColorAltImage) {
+  if (!canUseMackerelExtraImage) {
     return imageKey;
   }
 
-  return `${imageKey}1`;
+  return MACKEREL_RIGHT_EXTRA_IMAGE_KEY;
 }
 
 function selectCat(catKey) {
@@ -163,6 +183,183 @@ function toggleCatMenu() {
   closeCatMenu();
 }
 
+function createHitEffect(count) {
+  const hitElement = document.createElement("div");
+
+  hitElement.className = "hit-effect";
+  hitElement.textContent = `${count} HIT`;
+  document.body.appendChild(hitElement);
+
+  window.setTimeout(() => {
+    hitElement.remove();
+  }, HIT_EFFECT_REMOVE_DELAY_MS);
+}
+
+function createFanfareDrop(containerElement, index) {
+  const dropElement = document.createElement("span");
+  const emoji = FANFARE_EMOJIS[index % FANFARE_EMOJIS.length];
+  const xPosition = Math.random() * 100;
+  const fallDelay = Math.random() * 900;
+  const fallDuration = 2200 + Math.random() * 1400;
+
+  dropElement.className = "fanfare-drop";
+  dropElement.textContent = emoji;
+  dropElement.style.setProperty("--drop-x", `${xPosition}vw`);
+  dropElement.style.setProperty("--drop-delay", `${fallDelay}ms`);
+  dropElement.style.setProperty("--drop-duration", `${fallDuration}ms`);
+
+  containerElement.appendChild(dropElement);
+}
+
+function createGiftEffect() {
+  const giftElement = document.createElement("div");
+  const giftImageElement = document.createElement("img");
+  const fanfareElement = document.createElement("div");
+
+  giftElement.className = "gift-effect";
+  fanfareElement.className = "fanfare-rain";
+  giftImageElement.className = "gift-image";
+  giftImageElement.src = "./image/gift.png";
+  giftImageElement.alt = "선물";
+
+  giftElement.appendChild(fanfareElement);
+  giftElement.appendChild(giftImageElement);
+  document.body.appendChild(giftElement);
+
+  for (let index = 0; index < FANFARE_DROP_COUNT; index += 1) {
+    createFanfareDrop(fanfareElement, index);
+  }
+
+  window.setTimeout(() => {
+    giftElement.remove();
+  }, GIFT_EFFECT_REMOVE_DELAY_MS);
+}
+
+function createCoffeeTrapModal() {
+  const trapElement = document.createElement("div");
+  const panelElement = document.createElement("div");
+  const titleElement = document.createElement("p");
+  const textElement = document.createElement("p");
+  const linkElement = document.createElement("a");
+  const timerElement = document.createElement("p");
+
+  trapElement.className = "coffee-trap";
+  panelElement.className = "coffee-trap-panel";
+  titleElement.className = "coffee-trap-title";
+  textElement.className = "coffee-trap-text";
+  linkElement.className = "coffee-trap-link";
+  timerElement.className = "coffee-trap-timer";
+
+  trapElement.setAttribute("role", "dialog");
+  trapElement.setAttribute("aria-modal", "true");
+  titleElement.textContent = "잠깐!";
+  textElement.textContent = "다음으로 넘어가려면 개발자에게 커피를 사줘볼까요? 지금 바로 카카오페이로 고고";
+  linkElement.href = KAKAOPAY_LINK_URL;
+  linkElement.target = "_blank";
+  linkElement.rel = "noopener noreferrer";
+  linkElement.textContent = "카카오페이 바로가기 링크";
+  timerElement.textContent = "20초 후 자동으로 닫혀요";
+
+  panelElement.appendChild(titleElement);
+  panelElement.appendChild(textElement);
+  panelElement.appendChild(linkElement);
+  panelElement.appendChild(timerElement);
+  trapElement.appendChild(panelElement);
+  document.body.appendChild(trapElement);
+
+  window.setTimeout(() => {
+    trapElement.remove();
+  }, COFFEE_TRAP_DURATION_MS);
+}
+
+function createCatClickPopup(message) {
+  const popupElement = document.createElement("div");
+  const panelElement = document.createElement("div");
+  const textElement = document.createElement("p");
+  const closeButtonElement = document.createElement("button");
+
+  popupElement.className = "cat-click-popup";
+  panelElement.className = "cat-click-popup-panel";
+  textElement.className = "cat-click-popup-text";
+  closeButtonElement.className = "cat-click-popup-close";
+
+  popupElement.setAttribute("role", "dialog");
+  popupElement.setAttribute("aria-modal", "true");
+  textElement.textContent = message;
+  closeButtonElement.type = "button";
+  closeButtonElement.textContent = "확인";
+
+  closeButtonElement.addEventListener("click", () => {
+    popupElement.remove();
+  });
+
+  popupElement.addEventListener("pointerdown", (event) => {
+    if (event.target !== popupElement) {
+      return;
+    }
+
+    popupElement.remove();
+  });
+
+  panelElement.appendChild(textElement);
+  panelElement.appendChild(closeButtonElement);
+  popupElement.appendChild(panelElement);
+  document.body.appendChild(popupElement);
+}
+
+function handleCatImageClick() {
+  catImageClickCount += 1;
+
+  const message = CAT_CLICK_MESSAGES[catImageClickCount];
+
+  if (typeof message !== "string") {
+    return;
+  }
+
+  createCatClickPopup(message);
+}
+
+function shouldShowCoffeeTrap(count) {
+  return !hasShownCoffeeTrap && count === COFFEE_TRAP_COUNT;
+}
+
+function showCoffeeTrapIfNeeded(count) {
+  if (!shouldShowCoffeeTrap(count)) {
+    return;
+  }
+
+  hasShownCoffeeTrap = true;
+  createCoffeeTrapModal();
+}
+
+function shouldShowGiftEffect(count) {
+  return !hasShownGiftEffect && count >= GIFT_UNLOCK_COUNT;
+}
+
+function showGiftEffectIfNeeded(count) {
+  if (!shouldShowGiftEffect(count)) {
+    return;
+  }
+
+  hasShownGiftEffect = true;
+  createGiftEffect();
+}
+
+function shouldShowHitEffect(count) {
+  return count > 0 && count % HIT_INTERVAL_COUNT === 0;
+}
+
+function addPatCount(amount) {
+  patCount += amount;
+  countElement.textContent = String(patCount);
+  showCoffeeTrapIfNeeded(patCount);
+  showGiftEffectIfNeeded(patCount);
+
+  if (shouldShowHitEffect(patCount)) {
+    createHitEffect(patCount);
+  }
+}
+
 function patCat(direction, pointerEvent) {
   const config = directionConfig[direction];
 
@@ -170,8 +367,7 @@ function patCat(direction, pointerEvent) {
     return;
   }
 
-  patCount += 1;
-  countElement.textContent = String(patCount);
+  addPatCount(1);
 
   if (shouldShowDdolHiddenImage()) {
     const hiddenImageKey = getRandomDdolHiddenImageKey();
@@ -202,8 +398,7 @@ function isBonusTouchSequenceMatched() {
 }
 
 function addBonusTouchCount() {
-  patCount += BONUS_TOUCH_COUNT;
-  countElement.textContent = String(patCount);
+  addPatCount(BONUS_TOUCH_COUNT);
   messageElement.textContent = `비밀 토닥 +${BONUS_TOUCH_COUNT}`;
 }
 
@@ -486,10 +681,8 @@ function preloadCatImages() {
     });
   });
 
-  ["L1", "R1"].forEach((imageKey) => {
-    const image = new Image();
-    image.src = getCatImageSource(THREE_COLOR_CAT_KEY, imageKey);
-  });
+  const mackerelExtraImage = new Image();
+  mackerelExtraImage.src = getCatImageSource(MACKEREL_CAT_KEY, MACKEREL_RIGHT_EXTRA_IMAGE_KEY);
 
   DDOL_HIDDEN_IMAGE_KEYS.forEach((imageKey) => {
     const image = new Image();
@@ -557,6 +750,7 @@ document.addEventListener("pointerdown", (event) => {
 bindTouchZone(leftZoneElement, "left");
 bindTouchZone(rightZoneElement, "right");
 document.addEventListener("keydown", handleKeyboardPat);
+catImageElement.addEventListener("click", handleCatImageClick);
 
 motionNoticeCloseElement.addEventListener("click", () => {
   motionNoticeElement.hidden = true;
