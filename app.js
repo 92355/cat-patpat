@@ -56,7 +56,7 @@ const catConfig = {
   },
   ddol: {
     label: "똘순이",
-    imagePrefix: "ddol",
+    imagePrefix: "dds",
   },
 };
 
