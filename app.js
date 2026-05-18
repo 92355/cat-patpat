@@ -8,7 +8,7 @@ const DDOL_HIDDEN_IMAGE_KEYS = ["a", "b"];
 const DDOL_HIDDEN_IMAGE_PROBABILITY = 0.03;
 const ANIMATION_RESET_DELAY_MS = 530;
 const BURST_REMOVE_DELAY_MS = 250;
-const MOTION_IMPACT_THRESHOLD = 2;
+const MOTION_IMPACT_THRESHOLD = 1;
 const MOTION_DOMINANCE_RATIO = 1.0;
 const MOTION_MIN_INTERVAL_MS = 620;
 const MOTION_SETTLE_DELAY_MS = 90;
@@ -277,7 +277,7 @@ function commitPendingMotionImpact() {
 }
 
 function queueMotionImpact(motionImpact) {
-  const direction = motionImpact.x < 0 ? "left" : "right";
+  const direction = motionImpact.x < 0 ? "right" : "left";
   const strength = Math.abs(motionImpact.x);
 
   if (pendingMotionImpact === null || strength > pendingMotionImpact.strength) {
