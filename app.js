@@ -4,6 +4,8 @@ const ACTIVE_CLASS_NAME = "is-active";
 const CENTER_IMAGE_KEY = "C";
 const LEFT_IMAGE_KEY = "L";
 const RIGHT_IMAGE_KEY = "R";
+const THREE_COLOR_CAT_KEY = "threeColor";
+const THREE_COLOR_ALT_IMAGE_PROBABILITY = 0.3;
 const DDOL_HIDDEN_IMAGE_KEYS = ["a", "b"];
 const DDOL_HIDDEN_IMAGE_PROBABILITY = 0.03;
 const ANIMATION_RESET_DELAY_MS = 530;
@@ -58,6 +60,14 @@ const catConfig = {
     label: "똘순이",
     imagePrefix: "dds",
   },
+  threeColor: {
+    label: "삼색이",
+    imagePrefix: "3c",
+  },
+  mackerel: {
+    label: "고등어",
+    imagePrefix: "go",
+  },
 };
 
 const directionConfig = {
@@ -101,6 +111,19 @@ function setCatImage(imageKey) {
   catImageElement.src = getCatImageSource(selectedCatKey, imageKey);
   catImageElement.alt = cat.label;
   catElement.dataset.direction = imageKey.toLowerCase();
+}
+
+function getPatImageKey(imageKey) {
+  const canUseThreeColorAltImage =
+    selectedCatKey === THREE_COLOR_CAT_KEY &&
+    (imageKey === LEFT_IMAGE_KEY || imageKey === RIGHT_IMAGE_KEY) &&
+    Math.random() < THREE_COLOR_ALT_IMAGE_PROBABILITY;
+
+  if (!canUseThreeColorAltImage) {
+    return imageKey;
+  }
+
+  return `${imageKey}1`;
 }
 
 function selectCat(catKey) {
@@ -163,7 +186,7 @@ function patCat(direction, pointerEvent) {
   }
 
   messageElement.textContent = `${catConfig[selectedCatKey].label} ${config.messageSuffix}`;
-  setCatImage(config.imageKey);
+  setCatImage(getPatImageKey(config.imageKey));
   restartPatAnimation();
   setActiveButton(config.button);
   createTapBurst(pointerEvent, config.burst);
@@ -463,6 +486,11 @@ function preloadCatImages() {
     });
   });
 
+  ["L1", "R1"].forEach((imageKey) => {
+    const image = new Image();
+    image.src = getCatImageSource(THREE_COLOR_CAT_KEY, imageKey);
+  });
+
   DDOL_HIDDEN_IMAGE_KEYS.forEach((imageKey) => {
     const image = new Image();
     image.src = getCatImageSource("ddol", imageKey);
@@ -475,6 +503,35 @@ function bindTouchZone(zoneElement, direction) {
     patCat(direction, event);
     trackTouchSequence(direction);
   });
+}
+
+function getKeyboardDirection(key) {
+  const normalizedKey = key.toLowerCase();
+
+  if (normalizedKey === "a" || normalizedKey === "arrowleft") {
+    return "left";
+  }
+
+  if (normalizedKey === "d" || normalizedKey === "arrowright") {
+    return "right";
+  }
+
+  return null;
+}
+
+function handleKeyboardPat(event) {
+  if (event.repeat) {
+    return;
+  }
+
+  const direction = getKeyboardDirection(event.key);
+
+  if (direction === null) {
+    return;
+  }
+
+  event.preventDefault();
+  patCat(direction, event);
 }
 
 catOptionElements.forEach((optionElement) => {
@@ -499,6 +556,7 @@ document.addEventListener("pointerdown", (event) => {
 
 bindTouchZone(leftZoneElement, "left");
 bindTouchZone(rightZoneElement, "right");
+document.addEventListener("keydown", handleKeyboardPat);
 
 motionNoticeCloseElement.addEventListener("click", () => {
   motionNoticeElement.hidden = true;
