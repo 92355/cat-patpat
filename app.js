@@ -7,9 +7,9 @@ const RIGHT_IMAGE_KEY = "R";
 const DDOL_HIDDEN_IMAGE_KEYS = ["a", "b"];
 const DDOL_HIDDEN_IMAGE_PROBABILITY = 0.03;
 const ANIMATION_RESET_DELAY_MS = 530;
-const BURST_REMOVE_DELAY_MS = 450;
-const MOTION_IMPACT_THRESHOLD = 4;
-const MOTION_DOMINANCE_RATIO = 1.15;
+const BURST_REMOVE_DELAY_MS = 250;
+const MOTION_IMPACT_THRESHOLD = 2;
+const MOTION_DOMINANCE_RATIO = 1.0;
 const MOTION_MIN_INTERVAL_MS = 620;
 const MOTION_SETTLE_DELAY_MS = 90;
 const MOTION_BUTTON_ENABLED_CLASS_NAME = "is-enabled";
@@ -24,6 +24,8 @@ const rightZoneElement = document.querySelector("#rightZone");
 const motionToggleElement = document.querySelector("#motionToggle");
 const motionNoticeElement = document.querySelector("#motionNotice");
 const motionNoticeCloseElement = document.querySelector("#motionNoticeClose");
+const catMenuToggleElement = document.querySelector("#catMenuToggle");
+const catPickerElement = document.querySelector("#catPicker");
 const catOptionElements = document.querySelectorAll(".cat-option");
 
 const catConfig = {
@@ -87,12 +89,33 @@ function selectCat(catKey) {
   selectedCatKey = catKey;
   setCatImage(CENTER_IMAGE_KEY);
   messageElement.textContent = `${catConfig[catKey].label} 준비 완료`;
+  catMenuToggleElement.textContent = catConfig[catKey].label;
+  closeCatMenu();
 
   catOptionElements.forEach((optionElement) => {
     const isSelected = optionElement.dataset.cat === catKey;
     optionElement.classList.toggle(SELECTED_CLASS_NAME, isSelected);
     optionElement.setAttribute("aria-pressed", String(isSelected));
   });
+}
+
+function openCatMenu() {
+  catPickerElement.hidden = false;
+  catMenuToggleElement.setAttribute("aria-expanded", "true");
+}
+
+function closeCatMenu() {
+  catPickerElement.hidden = true;
+  catMenuToggleElement.setAttribute("aria-expanded", "false");
+}
+
+function toggleCatMenu() {
+  if (catPickerElement.hidden) {
+    openCatMenu();
+    return;
+  }
+
+  closeCatMenu();
 }
 
 function patCat(direction, pointerEvent) {
@@ -396,6 +419,20 @@ catOptionElements.forEach((optionElement) => {
   optionElement.addEventListener("click", () => {
     selectCat(optionElement.dataset.cat);
   });
+});
+
+catMenuToggleElement.addEventListener("click", toggleCatMenu);
+
+document.addEventListener("pointerdown", (event) => {
+  if (catPickerElement.hidden) {
+    return;
+  }
+
+  if (catPickerElement.contains(event.target) || catMenuToggleElement.contains(event.target)) {
+    return;
+  }
+
+  closeCatMenu();
 });
 
 bindTouchZone(leftZoneElement, "left");

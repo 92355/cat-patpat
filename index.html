@@ -8,20 +8,26 @@
   </head>
   <body>
     <main class="app-shell" aria-label="피곤하세요? 궁디팡팡해보세요">
-      <section class="stage" aria-live="polite">
-        <div class="status">
-          <p class="eyebrow">CAT PAT PAT</p>
-          <h1>냥이 궁디팡팡</h1>
-          <p id="message" class="message">냥이를 불러와요!</p>
-        </div>
+      <div class="cat-menu">
+        <button id="catMenuToggle" class="cat-menu-toggle" type="button" aria-expanded="false" aria-controls="catPicker">
+          치즈냥이
+        </button>
 
-        <div class="cat-picker" aria-label="고양이 선택">
+        <div id="catPicker" class="cat-picker" aria-label="고양이 선택" hidden>
           <button class="cat-option is-selected" type="button" data-cat="cheese" aria-pressed="true">
             치즈냥이
           </button>
           <button class="cat-option" type="button" data-cat="ddol" aria-pressed="false">
             똘순이
           </button>
+        </div>
+      </div>
+
+      <section class="stage" aria-live="polite">
+        <div class="status">
+          <p class="eyebrow">CAT PAT PAT</p>
+          <h1>냥이 궁디팡팡</h1>
+          <p id="message" class="message">냥이를 불러와요!</p>
         </div>
 
         <button id="motionToggle" class="motion-toggle" type="button" aria-pressed="false">
